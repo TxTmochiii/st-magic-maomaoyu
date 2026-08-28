@@ -1,6 +1,6 @@
 import { getContext } from "../../../extensions.js";
-import { generateRaw } from "../../../script.js"; 
-import { characters } from "../../../characters.js"; 
+import { generateRaw } from "../../../script.js"; 
+import { characters } from "../../../characters.js"; 
 
 // 自动动态探测插件路径
 const extensionFolderPath = new URL('.', import.meta.url).pathname.replace(/\/$/, '');
@@ -85,7 +85,7 @@ window.syncLocalStorage = saveSettings;
 function populateSillyTavernPresets() {
     const presetSelect = document.getElementById('global-prompt-preset');
     if (!presetSelect) return;
-    presetSelect.innerHTML = ''; 
+    presetSelect.innerHTML = ''; 
     if (window.instruct_presets && window.settings) {
         const currentPreset = window.settings.instruct_preset;
         for (const presetName of Object.keys(window.instruct_presets)) {
@@ -108,14 +108,14 @@ function populateStCharacterSelect() {
     const charSelect = document.getElementById('st-char-select');
     if (!charSelect) return;
     charSelect.innerHTML = '<option value="">请选择要关联的角色...</option>';
-    const charList = characters || []; 
+    const charList = characters || []; 
     if (charList.length === 0) {
         charSelect.innerHTML = '<option value="">⚠️ 暂无可用角色卡</option>';
         return;
     }
     charList.forEach((char, index) => {
         const opt = document.createElement('option');
-        opt.value = index; 
+        opt.value = index; 
         opt.textContent = char.name;
         charSelect.appendChild(opt);
     });
@@ -137,7 +137,7 @@ window.executeApiRequest = async function(promptText, titleText, saveCategory, s
     const resultCard = document.getElementById('result-card');
     const resultTextArea = document.getElementById('result-text-area');
     document.getElementById('result-title-text').innerHTML = titleText;
-    
+    
     magicOverlay.style.display = 'flex';
     resultCard.classList.add('hidden');
     resultTextArea.innerHTML = '';
@@ -148,13 +148,13 @@ window.executeApiRequest = async function(promptText, titleText, saveCategory, s
 
     if (selectedPreset && window.settings && window.settings.instruct_preset !== selectedPreset) {
         originalPreset = window.settings.instruct_preset;
-        window.settings.instruct_preset = selectedPreset; 
+        window.settings.instruct_preset = selectedPreset; 
     }
 
     try {
-        const responseText = await generateRaw(promptText, true); 
+        const responseText = await generateRaw(promptText, true); 
         let fullText = responseText.replace(/^```yaml/im, '').replace(/```$/m, '').trim();
-        
+        
         magicOverlay.style.display = 'none';
         resultCard.classList.remove('hidden');
         resultTextArea.innerText = fullText;
@@ -166,14 +166,14 @@ window.executeApiRequest = async function(promptText, titleText, saveCategory, s
         resultTextArea.innerHTML = `<span style="color:var(--mc-coral)">生成失败: ${error.message}</span>`;
     } finally {
         if (originalPreset !== null && window.settings) {
-            window.settings.instruct_preset = originalPreset; 
+            window.settings.instruct_preset = originalPreset; 
         }
     }
 }
 
 window.generatePersona = async function(type) {
     const prefix = type === 'general' ? 'g' : type === 'modern' ? 'm' : 'a';
-    
+    
     let stCharContext = "";
     const isLinkChecked = document.getElementById('toggle-link-st-char')?.checked;
     const selectedCharIndex = document.getElementById('st-char-select')?.value;
@@ -301,19 +301,19 @@ function initGenUI(){
     renderTags('g-era-c', configData.general.era, true); renderTags('g-bg-c', configData.general.bg, false);
     renderTags('g-hc-c', configData.general.hc, true); renderTags('g-hs-c', configData.general.hs, true);
     renderTags('g-ec-c', configData.general.ec, true); renderTags('g-looks-c', configData.general.looks, false);
-    renderTags('g-clo-c', configData.general.clo, false); renderTags('g-pers-c', configData.general.pers, false); 
+    renderTags('g-clo-c', configData.general.clo, false); renderTags('g-pers-c', configData.general.pers, false); 
     renderTags('g-job-c', configData.general.job, false);
-    
+    
     renderTags('m-era-c', configData.modern.era, true); renderTags('m-bg-c', configData.modern.bg, false);
     renderTags('m-hc-c', configData.modern.hc, true); renderTags('m-hs-c', configData.modern.hs, true);
     renderTags('m-ec-c', configData.modern.ec, true); renderTags('m-looks-c', configData.modern.looks, false);
-    renderTags('m-clo-c', configData.modern.clo, false); renderTags('m-pers-c', configData.modern.pers, false); 
+    renderTags('m-clo-c', configData.modern.clo, false); renderTags('m-pers-c', configData.modern.pers, false); 
     renderTags('m-job-c', configData.modern.job, false);
-    
+    
     renderTags('a-era-c', configData.ancient.era, true); renderTags('a-bg-c', configData.ancient.bg, false);
     renderTags('a-hc-c', configData.ancient.hc, true); renderTags('a-hs-c', configData.ancient.hs, true);
     renderTags('a-ec-c', configData.ancient.ec, true); renderTags('a-looks-c', configData.ancient.looks, false);
-    renderTags('a-clo-c', configData.ancient.clo, false); renderTags('a-pers-c', configData.ancient.pers, false); 
+    renderTags('a-clo-c', configData.ancient.clo, false); renderTags('a-pers-c', configData.ancient.pers, false); 
     renderTags('a-job-c', configData.ancient.job, false);
 }
 
@@ -349,7 +349,7 @@ function renderSavedList() {
     if(charsEl) charsEl.innerText = window.totalChars;
     const emptyMsg = document.getElementById('saved-empty-msg');
     if(window.savedItems.length === 0) { if(emptyMsg) emptyMsg.style.display = 'block'; return; }
-    
+    
     window.savedItems.forEach(item => {
         const div = document.createElement('div');
         div.style.cssText = "background:white; border:2px solid rgba(160,210,240,0.2); padding:18px; border-radius:20px; margin-bottom:16px;";
@@ -362,15 +362,16 @@ function renderSavedList() {
 }
 
 // ==========================================
-// 插件初始化 (创建UI并注入到原生系统菜单)
+// 插件初始化 (安全巡检机制 + 菜单注入)
 // ==========================================
 async function setupExtension() {
     try {
         await loadSettings();
 
-        // 1. 加载工坊主界面 UI
+        // 加载前端界面
         const htmlResponse = await fetch(`${extensionFolderPath}/template.html`);
         const htmlText = await htmlResponse.text();
+        
         const container = document.createElement('div');
         container.id = "magic-persona-plugin-container";
         container.style.cssText = "display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:99999; overflow-y:auto; background:var(--mc-grad-main);";
@@ -386,83 +387,86 @@ async function setupExtension() {
         closeAppBtn.addEventListener('click', () => container.style.display = 'none');
         container.appendChild(closeAppBtn);
 
-        // 初始化内部逻辑
         initGenUI();
         setTimeout(() => bindGlobalSettingsEvents(), 500);
 
-        // 核心打开逻辑
+        // 打开工坊的动作
         const openApp = () => {
             container.style.display = 'block';
             renderSavedList();
             populateSillyTavernPresets();
             populateStCharacterSelect();
-            // 点击后自动收起酒馆弹出的原生菜单
-            $('#extensions_popup, #chat_more_menu').hide();
+            // 收起原生弹窗
+            if(window.$) {
+                $('#extensions_popup, #chat_more_menu, #send_more_menu').hide();
+            }
         };
 
-        // ==========================================
-        // 入口一：注入到"扩展"管理面板的折叠列表里
-        // ==========================================
-        const extSettings = document.getElementById('extensions_settings');
-        if (extSettings) {
-            const drawerHtml = `
-            <div class="inline-drawer">
-                <div class="inline-drawer-toggle inline-drawer-header">
-                    <b>✨ 专属魔法设定工坊</b>
-                    <div class="inline-drawer-icon fa-solid fa-chevron-down down"></div>
-                </div>
-                <div class="inline-drawer-content" style="display: none;">
-                    <div style="padding: 15px; display: flex; justify-content: center;">
-                        <div id="btn-open-magic-persona-ext" class="menu_button interactable" style="padding: 10px 20px; border-radius: 8px;">
-                            <i class="fa-solid fa-wand-magic-sparkles"></i> <span>点击打开工坊界面</span>
+        // 智能定时器：不断寻找酒馆的菜单DOM，找到为止
+        if(window.$) {
+            let injectAttempts = 0;
+            const injectInterval = setInterval(() => {
+                injectAttempts++;
+                if (injectAttempts > 60) clearInterval(injectInterval); // 防止无限空转
+
+                // 1. 注入扩展管理面板 (置顶插入)
+                const extSettings = $('#extensions_settings');
+                if (extSettings.length > 0 && $('#btn-open-magic-persona-ext').length === 0) {
+                    const drawerHtml = `
+                    <div class="inline-drawer">
+                        <div class="inline-drawer-toggle inline-drawer-header">
+                            <b>✨ 专属魔法设定工坊</b>
+                            <div class="inline-drawer-icon fa-solid fa-chevron-down down"></div>
                         </div>
-                    </div>
-                </div>
-            </div>`;
-            $(extSettings).append(drawerHtml);
-            
-            // 绑定折叠动画
-            const newDrawer = $(extSettings).children().last();
-            newDrawer.find('.inline-drawer-toggle').on('click', function() {
-                const content = $(this).next('.inline-drawer-content');
-                const icon = $(this).find('.inline-drawer-icon');
-                content.slideToggle(200);
-                icon.toggleClass('down up');
-                icon.toggleClass('fa-chevron-down fa-chevron-up');
-            });
-            // 绑定打开事件
-            $('#btn-open-magic-persona-ext').on('click', openApp);
-        }
+                        <div class="inline-drawer-content" style="display: none;">
+                            <div style="padding: 15px; display: flex; justify-content: center;">
+                                <div id="btn-open-magic-persona-ext" class="menu_button interactable" style="padding: 10px 20px; border-radius: 8px;">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i> <span>点击打开工坊界面</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                    extSettings.prepend(drawerHtml); // Prepend 保证在最上头
+                    
+                    $('#btn-open-magic-persona-ext').on('click', openApp);
+                    extSettings.find('.inline-drawer-toggle').first().on('click', function() {
+                        const content = $(this).next('.inline-drawer-content');
+                        const icon = $(this).find('.inline-drawer-icon');
+                        content.slideToggle(200);
+                        icon.toggleClass('down up fa-chevron-down fa-chevron-up');
+                    });
+                }
 
-        // ==========================================
-        // 入口二：注入到输入框左侧魔法棒的“更多...”菜单里
-        // ==========================================
-        const menuBtnHtml = `
-        <div id="btn-open-magic-persona-menu" class="list-group-item menu_button interactable">
-            <div class="menu_button_icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-            <div class="menu_button_text">魔法人设工坊</div>
-        </div>`;
-        
-        // 兼容不同版本的酒馆菜单DOM结构
-        if ($('#extensions_popup').length) {
-            $('#extensions_popup').append(menuBtnHtml);
-        } else if ($('#chat_more_menu').length) {
-            $('#chat_more_menu').append(menuBtnHtml);
-        } else {
-            // 如果实在找不到菜单，就直接在输入框功能条上加一个小魔法棒图标
-            $('#chat_and_send_wrapper .flex-container').first().append(`
-                <div id="btn-open-magic-persona-menu" class="fa-solid fa-wand-magic-sparkles interactable" title="魔法人设工坊" style="margin: 0 8px; cursor:pointer;"></div>
-            `);
-        }
+                // 2. 注入聊天底部的魔法棒弹出菜单 (支持多个常见ID)
+                const wandMenu = $('#extensions_popup, #chat_more_menu, #send_more_menu, #extensions_menu').last();
+                if (wandMenu.length > 0 && $('#btn-open-magic-persona-menu').length === 0) {
+                    const menuBtnHtml = `
+                    <div id="btn-open-magic-persona-menu" class="list-group-item menu_button interactable" title="魔法人设工坊">
+                        <div class="menu_button_icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                        <div class="menu_button_text">魔法人设工坊</div>
+                    </div>`;
+                    
+                    if (wandMenu.find('.list-group').length) {
+                        wandMenu.find('.list-group').append(menuBtnHtml);
+                    } else {
+                        wandMenu.append(menuBtnHtml);
+                    }
+                    
+                    $(document).on('click', '#btn-open-magic-persona-menu', openApp);
+                }
 
-        // 委托点击事件
-        $(document).on('click', '#btn-open-magic-persona-menu', openApp);
+                // 只要两个入口都找到了，就停止巡检
+                if ($('#btn-open-magic-persona-ext').length > 0 && $('#btn-open-magic-persona-menu').length > 0) {
+                    clearInterval(injectInterval);
+                }
+
+            }, 1000); // 每 1 秒检测一次
+        }
 
     } catch(err) {
         console.error("[魔法人设工坊] 启动失败:", err);
     }
 }
 
-// 直接运行初始化
+// 启动
 setupExtension();
-
