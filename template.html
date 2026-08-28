@@ -1,0 +1,120 @@
+<!-- ======= MENU ======= -->
+<div id="menu-screen" class="menu-container">
+    <div class="menu-header">
+        <h1><span class="title-deco title-deco-l"></span>请选择魔法维度<span class="title-deco title-deco-r"></span></h1>
+        <p>专属设定生成器 - 已无缝接入 SillyTavern</p>
+    </div>
+    
+    <!-- 全局生成设置 (预设与卡片联动) -->
+    <div class="base-info-card" style="margin-top: 20px; width:100%; border-color: var(--mc-sky); background: rgba(255,255,255,0.85);">
+        <h3 style="margin-bottom:15px;z-index:2;position:relative">⚙️ 全局生成设置 (调用酒馆大模型)</h3>
+        <div class="form-group" style="margin-bottom: 15px; position:relative; z-index:2;">
+            <label style="font-weight:bold;display:block;margin-bottom:5px;">选择对话补全预设 (Instruct Preset)</label>
+            <select id="global-prompt-preset" class="bind-select" style="margin-bottom: 0;">
+                <option value="">正在读取酒馆预设...</option>
+            </select>
+            <p style="font-size: 0.8rem; color: var(--mc-text-light); margin-top: 5px;">* 生成时临时切换，生成后自动恢复，不影响主聊天室。</p>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; position:relative; z-index:2; background:rgba(255,255,255,0.6); border:2px solid rgba(160,210,240,0.3); border-radius:16px; padding:12px 16px;">
+            <span style="font-size:0.95rem; font-weight:700; color:var(--mc-text-dark);">🔗 深度关联酒馆已有角色卡</span>
+            <label class="switch" style="margin-left:0"><input type="checkbox" id="toggle-link-st-char"><span class="slider-sw"></span></label>
+        </div>
+        <div id="st-char-select-container" style="display:none; position:relative; z-index:2; margin-top:10px;">
+            <select id="st-char-select" class="bind-select" style="border-color: var(--mc-rose); margin-bottom: 0;">
+                <option value="">正在加载酒馆角色列表...</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="menu-grid">
+        <div class="menu-card" onclick="openGen('gen-general')"><h3>通用人设生成</h3><p>经典 · 多元宇宙通用模板</p></div>
+        <div class="menu-card" onclick="openGen('gen-modern')"><h3>现代人设生成</h3><p>都市 · 职场 · 娱乐圈写实模板</p></div>
+        <div class="menu-card" onclick="openGen('gen-ancient')"><h3>古风人设生成</h3><p>仙侠 · 武侠 · 权谋神仙卷宗模板</p></div>
+    </div>
+</div>
+
+<!-- 通用人设生成界面 (缩减版结构展示，原代码极长，这里放结构，核心逻辑由 JS 接管) -->
+<div id="gen-general" class="gen-container hidden">
+    <div class="top-bar"><button class="back-btn" onclick="goBack()">返回主选</button></div>
+    <h2 class="header-title">通用人设档案</h2>
+    <div class="base-info-card">
+        <div class="input-row">
+            <input type="text" id="g-name" class="fancy-input" placeholder="输入姓名 (可留空)...">
+            <input type="text" id="g-gender" class="fancy-input" value="女" placeholder="性别...">
+            <input type="text" id="g-age" class="fancy-input" value="22" placeholder="年龄...">
+            <input type="text" id="g-wordcount" class="fancy-input" value="1000" placeholder="期望字数(如:1000)">
+        </div>
+    </div>
+    <!-- 这里的 details 列表与你原版 HTML 结构完全一致，为免冗长，此处保留基础容器 -->
+    <details class="main-sec" open><summary><div class="summary-content"><span>时代背景</span></div></summary><div class="tags-container radio-mode" id="g-era-c"><div class="custom-input-group"><input type="text" class="custom-input"><button class="custom-add-btn" onclick="addCustomTag(this, true)">添加</button></div></div></details>
+    <details class="main-sec" open><summary><div class="summary-content"><span>原生家庭与背景</span></div></summary><div class="tags-container" id="g-bg-c"><div class="custom-input-group"><input type="text" class="custom-input"><button class="custom-add-btn" onclick="addCustomTag(this)">添加</button></div></div></details>
+    <details class="main-sec" open><summary><div class="summary-content"><span>性格特征</span></div></summary><div class="tags-container" id="g-pers-c"><div class="custom-input-group"><input type="text" class="custom-input"><button class="custom-add-btn" onclick="addCustomTag(this)">添加</button></div></div></details>
+    <details class="main-sec" open><summary><div class="summary-content"><span>职业身份</span></div></summary><div class="tags-container" id="g-job-c"><div class="custom-input-group"><input type="text" class="custom-input"><button class="custom-add-btn" onclick="addCustomTag(this)">添加</button></div></div></details>
+    
+    <div style="margin: 0 0 20px 0; background: rgba(255,255,255,0.45); border: 2px dashed var(--mc-sky); border-radius: 18px; padding: 16px;">
+        <h3>✨ 魔法阵核心咒语 (已选标签汇总)</h3>
+        <textarea id="summary-gen-general" class="fancy-input" style="width:100%; height:120px;"></textarea>
+    </div>
+    <button class="btn-generate" onclick="generatePersona('general')">唤醒魔法生成</button>
+</div>
+
+<!-- 现代人设与古风人设同理，保持与你原版一致的 DOM ID 即可 -->
+<div id="gen-modern" class="gen-container hidden">
+    <div class="top-bar"><button class="back-btn" onclick="goBack()">返回主选</button></div><h2 class="header-title">现代档案</h2>
+    <div class="base-info-card"><div class="input-row"><input type="text" id="m-name" class="fancy-input" placeholder="姓名 (可留空)..."><input type="text" id="m-gender" class="fancy-input" value="女" placeholder="性别..."><input type="text" id="m-age" class="fancy-input" value="24" placeholder="年龄..."><input type="text" id="m-wordcount" class="fancy-input" value="1000" placeholder="期望字数(如:1000)"></div></div>
+    <details class="main-sec" open><summary><div class="summary-content"><span>主舞台背景</span></div></summary><div class="tags-container radio-mode" id="m-era-c"><div class="custom-input-group"><input type="text" class="custom-input"><button class="custom-add-btn" onclick="addCustomTag(this, true)">添加</button></div></div></details>
+    <details class="main-sec" open><summary><div class="summary-content"><span>原生家庭与背景</span></div></summary><div class="tags-container" id="m-bg-c"><div class="custom-input-group"><input type="text" class="custom-input"><button class="custom-add-btn" onclick="addCustomTag(this)">添加</button></div></div></details>
+    <details class="main-sec" open><summary><div class="summary-content"><span>性格特征</span></div></summary><div class="tags-container" id="m-pers-c"><div class="custom-input-group"><input type="text" class="custom-input"><button class="custom-add-btn" onclick="addCustomTag(this)">添加</button></div></div></details>
+    <details class="main-sec" open><summary><div class="summary-content"><span>职业身份</span></div></summary><div class="tags-container" id="m-job-c"><div class="custom-input-group"><input type="text" class="custom-input"><button class="custom-add-btn" onclick="addCustomTag(this)">添加</button></div></div></details>
+    <div style="margin: 0 0 20px 0; background: rgba(255,255,255,0.45); border: 2px dashed var(--mc-sky); border-radius: 18px; padding: 16px;">
+        <h3>✨ 魔法阵核心咒语 (已选标签汇总)</h3><textarea id="summary-gen-modern" class="fancy-input" style="width:100%; height:120px;"></textarea>
+    </div>
+    <button class="btn-generate" onclick="generatePersona('modern')">唤醒魔法生成</button>
+</div>
+
+<div id="gen-ancient" class="gen-container hidden">
+    <div class="top-bar"><button class="back-btn" onclick="goBack()">返回主选</button></div><h2 class="header-title">古风档案</h2>
+    <div class="base-info-card"><div class="input-row"><input type="text" id="a-name" class="fancy-input" placeholder="姓名 (可留空)..."><input type="text" id="a-gender" class="fancy-input" value="女" placeholder="性别..."><input type="text" id="a-age" class="fancy-input" value="18" placeholder="年龄..."><input type="text" id="a-wordcount" class="fancy-input" value="1000" placeholder="期望字数(如:1000)"></div></div>
+    <details class="main-sec" open><summary><div class="summary-content"><span>大千世界</span></div></summary><div class="tags-container radio-mode" id="a-era-c"><div class="custom-input-group"><input type="text" class="custom-input"><button class="custom-add-btn" onclick="addCustomTag(this, true)">添加</button></div></div></details>
+    <details class="main-sec" open><summary><div class="summary-content"><span>出身背景</span></div></summary><div class="tags-container" id="a-bg-c"><div class="custom-input-group"><input type="text" class="custom-input"><button class="custom-add-btn" onclick="addCustomTag(this)">添加</button></div></div></details>
+    <details class="main-sec" open><summary><div class="summary-content"><span>性格特征</span></div></summary><div class="tags-container" id="a-pers-c"><div class="custom-input-group"><input type="text" class="custom-input"><button class="custom-add-btn" onclick="addCustomTag(this)">添加</button></div></div></details>
+    <details class="main-sec" open><summary><div class="summary-content"><span>职业身份</span></div></summary><div class="tags-container" id="a-job-c"><div class="custom-input-group"><input type="text" class="custom-input"><button class="custom-add-btn" onclick="addCustomTag(this)">添加</button></div></div></details>
+    <div style="margin: 0 0 20px 0; background: rgba(255,255,255,0.45); border: 2px dashed var(--mc-sky); border-radius: 18px; padding: 16px;">
+        <h3>✨ 魔法阵核心咒语 (已选标签汇总)</h3><textarea id="summary-gen-ancient" class="fancy-input" style="width:100%; height:120px;"></textarea>
+    </div>
+    <button class="btn-generate" onclick="generatePersona('ancient')">唤醒魔法生成</button>
+</div>
+
+<!-- 结果展示框 -->
+<div id="result-card" class="gen-container hidden" style="padding-bottom:40px;">
+    <h2 class="result-title" id="result-title-text">专属设定魔法卷宗</h2>
+    <button class="copy-btn" onclick="copyResult()">一键复制</button>
+    <div id="result-text-area" class="result-text-box"></div>
+    <button class="back-btn" style="margin-top:20px" onclick="document.getElementById('result-card').classList.add('hidden')">收起卷宗</button>
+</div>
+
+<!-- 浮动工具栏 -->
+<div id="floating-tools" class="floating-tools">
+    <button class="float-btn heart-btn" id="heart-float-btn" onclick="openModal('heart-modal')" title="已存设定">
+        ❤️<span class="float-btn-badge" id="heart-badge"></span>
+    </button>
+</div>
+
+<!-- 已存设定模态框 -->
+<div class="modal-overlay" id="heart-modal">
+    <div class="modal-content" style="max-width:600px">
+        <div class="modal-close-x" onclick="closeModal('heart-modal')">x</div>
+        <h2 class="modal-title">已保存的设定集 (存储于酒馆)</h2>
+        <div class="heart-stats">
+            <div>总设定: <span id="hs-total">0</span></div>
+            <div>总字数: <span id="hs-chars">0</span></div>
+        </div>
+        <div id="saved-settings-list"></div>
+        <div id="saved-empty-msg" style="text-align:center; padding: 40px; color: var(--mc-text-light);">空空如也，生成的设定将自动落入此处</div>
+        <button class="btn-generate" onclick="clearAllSaved()" style="margin-top:20px; padding: 10px; font-size:1rem; width:100%;">清空记录</button>
+    </div>
+</div>
+
+<!-- 加载遮罩 -->
+<div id="magic-overlay"><div class="magic-text">酒馆大模型正在咏唱中...</div></div>
+<div id="toast">提示信息</div>
