@@ -2,7 +2,7 @@ import { getContext } from "../../../extensions.js";
 import { generateRaw } from "../../../script.js"; 
 import { characters } from "../../../characters.js"; 
 
-// 自动动态探测插件路径（兼容所有酒馆目录和第三方 third-party 路径）
+// 自动动态探测插件路径
 const extensionFolderPath = new URL('.', import.meta.url).pathname.replace(/\/$/, '');
 const extensionName = "st-magic-maomaoyu";
 
@@ -362,61 +362,102 @@ function renderSavedList() {
 }
 
 // ==========================================
-// 插件初始化 (创建悬浮球并注入 DOM)
+// 插件初始化 (创建UI并注入到原生系统菜单)
 // ==========================================
 async function setupExtension() {
     try {
         await loadSettings();
 
-        // 动态加载 template.html
+        // 1. 加载工坊主界面 UI
         const htmlResponse = await fetch(`${extensionFolderPath}/template.html`);
         const htmlText = await htmlResponse.text();
-        
         const container = document.createElement('div');
         container.id = "magic-persona-plugin-container";
         container.style.cssText = "display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:99999; overflow-y:auto; background:var(--mc-grad-main);";
         container.innerHTML = htmlText;
         document.body.appendChild(container);
 
-        // 动态加载 CSS
         const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = `${extensionFolderPath}/style.css`;
         document.head.appendChild(link);
 
-        // 关闭按钮
         const closeAppBtn = document.createElement('div');
         closeAppBtn.innerHTML = "❌ 退出魔法工坊";
         closeAppBtn.style.cssText = "position:fixed; top:20px; left:20px; z-index:100000; cursor:pointer; background:rgba(255,255,255,0.9); padding:10px 20px; border-radius:30px; font-weight:bold; box-shadow:0 4px 12px rgba(0,0,0,0.2); color:var(--mc-text-dark);";
         closeAppBtn.addEventListener('click', () => container.style.display = 'none');
         container.appendChild(closeAppBtn);
 
-        // 注入悬浮球
-        const floatingBall = document.createElement('div');
-        floatingBall.id = "magic-floating-ball";
-        floatingBall.title = "魔法人设工坊";
-        floatingBall.innerHTML = `<img id="magic-floating-icon" src="${extensionFolderPath}/icon.png" alt="工坊" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%23F8A4B8\'><path d=\'M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6.4-4.8-6.4 4.8 2.4-7.2-6-4.8h7.6z\'/></svg>'"/>`;
-        document.body.appendChild(floatingBall);
-
-        let isDragging = false;
-        if (window.$ && typeof $.fn.draggable === 'function') {
-            $('#magic-floating-ball').draggable({
-                start: function() { isDragging = true; },
-                stop: function() { setTimeout(() => { isDragging = false; }, 100); }
-            });
-        }
-
-        floatingBall.addEventListener('click', () => {
-            if (isDragging) return; 
-            const isHidden = container.style.display === 'none';
-            container.style.display = isHidden ? 'block' : 'none';
-            if (isHidden) {
-                renderSavedList();
-                populateSillyTavernPresets();
-                populateStCharacterSelect();
-            }
-        });
-
+        // 初始化内部逻辑
         initGenUI();
         setTimeout(() => bindGlobalSettingsEvents(), 500);
+
+        // 核心打开逻辑
+        const openApp = () => {
+            container.style.display = 'block';
+            renderSavedList();
+            populateSillyTavernPresets();
+            populateStCharacterSelect();
+            // 点击后自动收起酒馆弹出的原生菜单
+            $('#extensions_popup, #chat_more_menu').hide();
+        };
+
+        // ==========================================
+        // 入口一：注入到"扩展"管理面板的折叠列表里
+        // ==========================================
+        const extSettings = document.getElementById('extensions_settings');
+        if (extSettings) {
+            const drawerHtml = `
+            <div class="inline-drawer">
+                <div class="inline-drawer-toggle inline-drawer-header">
+                    <b>✨ 专属魔法设定工坊</b>
+                    <div class="inline-drawer-icon fa-solid fa-chevron-down down"></div>
+                </div>
+                <div class="inline-drawer-content" style="display: none;">
+                    <div style="padding: 15px; display: flex; justify-content: center;">
+                        <div id="btn-open-magic-persona-ext" class="menu_button interactable" style="padding: 10px 20px; border-radius: 8px;">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> <span>点击打开工坊界面</span>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+            $(extSettings).append(drawerHtml);
+            
+            // 绑定折叠动画
+            const newDrawer = $(extSettings).children().last();
+            newDrawer.find('.inline-drawer-toggle').on('click', function() {
+                const content = $(this).next('.inline-drawer-content');
+                const icon = $(this).find('.inline-drawer-icon');
+                content.slideToggle(200);
+                icon.toggleClass('down up');
+                icon.toggleClass('fa-chevron-down fa-chevron-up');
+            });
+            // 绑定打开事件
+            $('#btn-open-magic-persona-ext').on('click', openApp);
+        }
+
+        // ==========================================
+        // 入口二：注入到输入框左侧魔法棒的“更多...”菜单里
+        // ==========================================
+        const menuBtnHtml = `
+        <div id="btn-open-magic-persona-menu" class="list-group-item menu_button interactable">
+            <div class="menu_button_icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+            <div class="menu_button_text">魔法人设工坊</div>
+        </div>`;
+        
+        // 兼容不同版本的酒馆菜单DOM结构
+        if ($('#extensions_popup').length) {
+            $('#extensions_popup').append(menuBtnHtml);
+        } else if ($('#chat_more_menu').length) {
+            $('#chat_more_menu').append(menuBtnHtml);
+        } else {
+            // 如果实在找不到菜单，就直接在输入框功能条上加一个小魔法棒图标
+            $('#chat_and_send_wrapper .flex-container').first().append(`
+                <div id="btn-open-magic-persona-menu" class="fa-solid fa-wand-magic-sparkles interactable" title="魔法人设工坊" style="margin: 0 8px; cursor:pointer;"></div>
+            `);
+        }
+
+        // 委托点击事件
+        $(document).on('click', '#btn-open-magic-persona-menu', openApp);
+
     } catch(err) {
         console.error("[魔法人设工坊] 启动失败:", err);
     }
