@@ -2,10 +2,11 @@ import { getContext } from "../../../extensions.js";
 import { generateRaw } from "../../../script.js"; 
 import { characters } from "../../../characters.js"; 
 
+// 自动动态探测插件路径（兼容所有酒馆目录和第三方 third-party 路径）
+const extensionFolderPath = new URL('.', import.meta.url).pathname.replace(/\/$/, '');
 const extensionName = "st-magic-maomaoyu";
-const extensionFolderPath = `scripts/extensions/${extensionName}`;
 
-// 接管原有的全局变量
+// 接管全局变量
 window.savedItems = [];
 window.savedCount = 0;
 window.todayCount = 0;
@@ -13,7 +14,7 @@ window.totalChars = 0;
 window.currentHeartTab = '全部';
 
 // ==========================================
-// 完整海量词库数据 (完全保留原版)
+// 完整词库数据
 // ==========================================
 const HC_COMMON=["随机","樱花粉","银白霜雪","雾霾蓝","薄荷绿","玫瑰金","亚麻灰绿","琥珀茶棕","巧克力色","黑茶色","鸦青色","冰川蓝","极光紫","晨曦微光金","暮色橘","冷灰紫","香槟金","海王红","蜜桃粉","薰衣草紫","星空蓝紫渐变","奶茶棕","原生墨黑","白茶色","流沙金","深海蓝","复古红棕","青木亚麻","冷调铂金","暖阳橘棕","枫叶红","鸢尾紫","薄藤色","砂金","焦糖色","黑莓紫","极地银灰","初雪白","珊瑚橘","人鱼姬粉","冷翠绿","蓝莓色","香草金","栗子棕","粉紫渐变","黑白阴阳染","挂耳挑染银","裙摆染粉","奶霜白","星河银","孔雀蓝","酒红色","脏橘色","浅香槟","灰蓝渐变","樱花渐变白","曜石黑","深茶紫","奶茶灰棕","极昼白","暗夜紫"];
 const EC_COMMON=["随机","曜石黑","琉璃蓝","翡翠绿","琥珀金","桃花粉","星空紫","异色瞳(蓝金)","异色瞳(红绿)","极地冰蓝","暮色橘","银灰霜雪","鸽血红","深海幽蓝","浅雾灰","茶棕色","薄荷青","紫水晶色","玫瑰红","流沙金","苍青色","猫眼金绿","孔雀蓝","红宝石色","清透水蓝","暖阳金","迷雾紫","初雪白","深空黑","冷月银","星芒异色瞳","碧水绿","琉璃浅棕","幽冥深紫","极光绿","幻彩人鱼瞳","樱花浅粉","黑珍珠色","深褐色","酒红色","琥珀澄黄","冷冽灰蓝","星辰大海色","温柔奶茶棕","魅惑狐金","冰湖蓝","月光石白","冷翡翠","血泊红","空灵浅紫","晶石蓝"];
@@ -50,34 +51,36 @@ const configData = {
 };
 
 // ==========================================
-// 存储与读取 (依托酒馆扩展设置)
+// 存储与读取
 // ==========================================
 async function loadSettings() {
-    const context = getContext();
-    const settings = context.extension_settings[extensionName] || {};
-    window.savedItems = settings.savedItems || [];
-    window.savedCount = settings.savedCount || 0;
-    window.todayCount = settings.todayCount || 0;
-    window.totalChars = settings.totalChars || 0;
+    try {
+        const context = getContext();
+        const settings = context.extension_settings[extensionName] || {};
+        window.savedItems = settings.savedItems || [];
+        window.savedCount = settings.savedCount || 0;
+        window.todayCount = settings.todayCount || 0;
+        window.totalChars = settings.totalChars || 0;
+    } catch(e) {}
 }
 
 function saveSettings() {
-    const context = getContext();
-    context.extension_settings[extensionName] = {
-        savedItems: window.savedItems,
-        savedCount: window.savedCount,
-        todayCount: window.todayCount,
-        totalChars: window.totalChars
-    };
-    if (typeof context.saveSettings === 'function') {
-        context.saveSettings();
-    }
+    try {
+        const context = getContext();
+        context.extension_settings[extensionName] = {
+            savedItems: window.savedItems,
+            savedCount: window.savedCount,
+            todayCount: window.todayCount,
+            totalChars: window.totalChars
+        };
+        if (typeof context.saveSettings === 'function') context.saveSettings();
+    } catch(e) {}
 }
 
 window.syncLocalStorage = saveSettings;
 
 // ==========================================
-// 酒馆数据获取 (预设 & 角色卡)
+// 数据读取与生成
 // ==========================================
 function populateSillyTavernPresets() {
     const presetSelect = document.getElementById('global-prompt-preset');
@@ -97,17 +100,17 @@ function populateSillyTavernPresets() {
             presetSelect.appendChild(opt);
         }
     } else {
-        presetSelect.innerHTML = '<option value="">⚠️ 无法读取酒馆预设，将使用系统默认</option>';
+        presetSelect.innerHTML = '<option value="">⚠️ 无法读取预设，使用默认设置</option>';
     }
 }
 
 function populateStCharacterSelect() {
     const charSelect = document.getElementById('st-char-select');
     if (!charSelect) return;
-    charSelect.innerHTML = '<option value="">请选择要关联的酒馆角色...</option>';
+    charSelect.innerHTML = '<option value="">请选择要关联的角色...</option>';
     const charList = characters || []; 
     if (charList.length === 0) {
-        charSelect.innerHTML = '<option value="">⚠️ 未检测到任何角色卡</option>';
+        charSelect.innerHTML = '<option value="">⚠️ 暂无可用角色卡</option>';
         return;
     }
     charList.forEach((char, index) => {
@@ -129,9 +132,6 @@ function bindGlobalSettingsEvents() {
     }
 }
 
-// ==========================================
-// 核心：接管生成逻辑 (调用酒馆原生 API)
-// ==========================================
 window.executeApiRequest = async function(promptText, titleText, saveCategory, saveTitlePrefix, saveName) {
     const magicOverlay = document.getElementById('magic-overlay');
     const resultCard = document.getElementById('result-card');
@@ -142,7 +142,6 @@ window.executeApiRequest = async function(promptText, titleText, saveCategory, s
     resultCard.classList.add('hidden');
     resultTextArea.innerHTML = '';
 
-    // 预设偷梁换柱逻辑 (不影响主聊天)
     const presetSelect = document.getElementById('global-prompt-preset');
     const selectedPreset = presetSelect ? presetSelect.value : null;
     let originalPreset = null;
@@ -175,7 +174,6 @@ window.executeApiRequest = async function(promptText, titleText, saveCategory, s
 window.generatePersona = async function(type) {
     const prefix = type === 'general' ? 'g' : type === 'modern' ? 'm' : 'a';
     
-    // 获取关联酒馆角色卡信息
     let stCharContext = "";
     const isLinkChecked = document.getElementById('toggle-link-st-char')?.checked;
     const selectedCharIndex = document.getElementById('st-char-select')?.value;
@@ -242,9 +240,9 @@ Capabilities:
 };
 
 // ==========================================
-// 辅助与 UI 函数绑定到 window (供 HTML 调用)
+// 辅助与 UI 函数
 // ==========================================
-window.showToast = function(msg){ const t = document.getElementById('toast'); t.innerText = msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 3200); }
+window.showToast = function(msg){ const t = document.getElementById('toast'); if(t){ t.innerText = msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 3200); } }
 window.goBack = function(){ document.querySelectorAll('.gen-container').forEach(el=>el.classList.add('hidden')); document.getElementById('menu-screen').classList.remove('hidden'); }
 window.openGen = function(id){ document.getElementById('menu-screen').classList.add('hidden'); document.getElementById('result-card').classList.add('hidden'); document.getElementById(id).classList.remove('hidden'); }
 window.openModal = function(id){ document.getElementById(id).style.display = 'flex'; }
@@ -324,7 +322,8 @@ function initGenUI(){
 // ==========================================
 window.saveToHeart = function(category, titlePrefix, name, content, bindId) {
     const list = document.getElementById('saved-settings-list');
-    document.getElementById('saved-empty-msg').style.display='none';
+    const emptyMsg = document.getElementById('saved-empty-msg');
+    if(emptyMsg) emptyMsg.style.display='none';
     const id = 'saved_'+Date.now();
     const fullTitle = name ? `${titlePrefix} - ${name}` : titlePrefix;
     window.savedCount++; window.totalChars+=content.length;
@@ -342,10 +341,14 @@ window.clearAllSaved = function() {
 
 function renderSavedList() {
     const list = document.getElementById('saved-settings-list');
+    if(!list) return;
     list.innerHTML = '';
-    document.getElementById('hs-total').innerText = window.savedCount;
-    document.getElementById('hs-chars').innerText = window.totalChars;
-    if(window.savedItems.length === 0) { document.getElementById('saved-empty-msg').style.display = 'block'; return; }
+    const totalEl = document.getElementById('hs-total');
+    const charsEl = document.getElementById('hs-chars');
+    if(totalEl) totalEl.innerText = window.savedCount;
+    if(charsEl) charsEl.innerText = window.totalChars;
+    const emptyMsg = document.getElementById('saved-empty-msg');
+    if(window.savedItems.length === 0) { if(emptyMsg) emptyMsg.style.display = 'block'; return; }
     
     window.savedItems.forEach(item => {
         const div = document.createElement('div');
@@ -359,59 +362,66 @@ function renderSavedList() {
 }
 
 // ==========================================
-// 插件初始化 (挂载悬浮球 & 注入 DOM)
+// 插件初始化 (创建悬浮球并注入 DOM)
 // ==========================================
 async function setupExtension() {
-    await loadSettings();
+    try {
+        await loadSettings();
 
-    const htmlResponse = await fetch(`${extensionFolderPath}/template.html`);
-    const htmlText = await htmlResponse.text();
-    
-    const container = document.createElement('div');
-    container.id = "magic-persona-plugin-container";
-    container.style.cssText = "display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:99999; overflow-y:auto; background:var(--mc-grad-main);";
-    container.innerHTML = htmlText;
-    document.body.appendChild(container);
+        // 动态加载 template.html
+        const htmlResponse = await fetch(`${extensionFolderPath}/template.html`);
+        const htmlText = await htmlResponse.text();
+        
+        const container = document.createElement('div');
+        container.id = "magic-persona-plugin-container";
+        container.style.cssText = "display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:99999; overflow-y:auto; background:var(--mc-grad-main);";
+        container.innerHTML = htmlText;
+        document.body.appendChild(container);
 
-    const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = `${extensionFolderPath}/style.css`;
-    document.head.appendChild(link);
+        // 动态加载 CSS
+        const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = `${extensionFolderPath}/style.css`;
+        document.head.appendChild(link);
 
-    // 关闭按钮
-    const closeAppBtn = document.createElement('div');
-    closeAppBtn.innerHTML = "❌ 退出魔法工坊";
-    closeAppBtn.style.cssText = "position:fixed; top:20px; left:20px; z-index:100000; cursor:pointer; background:rgba(255,255,255,0.9); padding:10px 20px; border-radius:30px; font-weight:bold; box-shadow:0 4px 12px rgba(0,0,0,0.2); color:var(--mc-text-dark);";
-    closeAppBtn.addEventListener('click', () => container.style.display = 'none');
-    container.appendChild(closeAppBtn);
+        // 关闭按钮
+        const closeAppBtn = document.createElement('div');
+        closeAppBtn.innerHTML = "❌ 退出魔法工坊";
+        closeAppBtn.style.cssText = "position:fixed; top:20px; left:20px; z-index:100000; cursor:pointer; background:rgba(255,255,255,0.9); padding:10px 20px; border-radius:30px; font-weight:bold; box-shadow:0 4px 12px rgba(0,0,0,0.2); color:var(--mc-text-dark);";
+        closeAppBtn.addEventListener('click', () => container.style.display = 'none');
+        container.appendChild(closeAppBtn);
 
-    // 注入可拖拽悬浮球
-    const floatingBall = document.createElement('div');
-    floatingBall.id = "magic-floating-ball";
-    floatingBall.title = "魔法人设工坊";
-    floatingBall.innerHTML = `<img id="magic-floating-icon" src="${extensionFolderPath}/icon.png" alt="工坊" />`;
-    document.body.appendChild(floatingBall);
+        // 注入悬浮球
+        const floatingBall = document.createElement('div');
+        floatingBall.id = "magic-floating-ball";
+        floatingBall.title = "魔法人设工坊";
+        floatingBall.innerHTML = `<img id="magic-floating-icon" src="${extensionFolderPath}/icon.png" alt="工坊" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%23F8A4B8\'><path d=\'M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6.4-4.8-6.4 4.8 2.4-7.2-6-4.8h7.6z\'/></svg>'"/>`;
+        document.body.appendChild(floatingBall);
 
-    let isDragging = false;
-    $('#magic-floating-ball').draggable({
-        start: function() { isDragging = true; },
-        stop: function() { setTimeout(() => { isDragging = false; }, 100); }
-    });
-
-    floatingBall.addEventListener('click', () => {
-        if (isDragging) return; 
-        const isHidden = container.style.display === 'none';
-        container.style.display = isHidden ? 'block' : 'none';
-        if (isHidden) {
-            renderSavedList();
-            populateSillyTavernPresets();
-            populateStCharacterSelect();
+        let isDragging = false;
+        if (window.$ && typeof $.fn.draggable === 'function') {
+            $('#magic-floating-ball').draggable({
+                start: function() { isDragging = true; },
+                stop: function() { setTimeout(() => { isDragging = false; }, 100); }
+            });
         }
-    });
 
-    initGenUI();
-    setTimeout(() => bindGlobalSettingsEvents(), 500);
+        floatingBall.addEventListener('click', () => {
+            if (isDragging) return; 
+            const isHidden = container.style.display === 'none';
+            container.style.display = isHidden ? 'block' : 'none';
+            if (isHidden) {
+                renderSavedList();
+                populateSillyTavernPresets();
+                populateStCharacterSelect();
+            }
+        });
+
+        initGenUI();
+        setTimeout(() => bindGlobalSettingsEvents(), 500);
+    } catch(err) {
+        console.error("[魔法人设工坊] 启动失败:", err);
+    }
 }
 
-jQuery(document).ready(function () {
-    setupExtension();
-});
+// 直接运行初始化
+setupExtension();
 
