@@ -1,9 +1,12 @@
 import { getContext } from '../../../extensions.js';
-import { generateQuietPrompt } from '../../../../script.js';
-import { registerSlashCommand } from '../../../slash-commands.js';
+import { generateQuietPrompt, characters } from '../../../../script.js';
 
-// ================= 动态获取路径，防止文件夹重命名导致崩溃 =================
-const extensionFolderPath = import.meta.url.substring(0, import.meta.url.lastIndexOf('/'));
+// ================= 动态获取路径并去除参数 =================
+let basePath = import.meta.url;
+if (basePath.includes('?')) basePath = basePath.split('?')[0];
+const extensionFolderPath = basePath.substring(0, basePath.lastIndexOf('/'));
+
+console.log(`[st-magic-maomaoyu] 插件开始加载, 路径: ${extensionFolderPath}`);
 
 // ================= 全局数据字典 =================
 const HC_COMMON=["随机","樱花粉","银白霜雪","雾霾蓝","薄荷绿","玫瑰金","亚麻灰绿","琥珀茶棕","巧克力色","黑茶色","鸦青色","冰川蓝","极光紫","晨曦微光金","暮色橘","冷灰紫","香槟金","海王红","蜜桃粉","薰衣草紫","星空蓝紫渐变","奶茶棕","原生墨黑","白茶色","流沙金","深海蓝","复古红棕","青木亚麻","冷调铂金","暖阳橘棕","枫叶红","鸢尾紫","薄藤色","砂金","焦糖色","黑莓紫","极地银灰","初雪白","珊瑚橘","人鱼姬粉","冷翠绿","蓝莓色","香草金","栗子棕","粉紫渐变","黑白阴阳染","挂耳挑染银","裙摆染粉","奶霜白","星河银","孔雀蓝","酒红色","脏橘色","浅香槟","灰蓝渐变","樱花渐变白","曜石黑","深茶紫","奶茶灰棕","极昼白","暗夜紫"];
@@ -191,7 +194,6 @@ window.populateBindSelect = function(selectId) {
     
     let hasChars = false;
     
-    // 1. 本地保存的设定
     const localGroup = document.createElement('optgroup');
     localGroup.label = "--- 魔法工坊本地设定 ---";
     window.savedItems.forEach(item => {
@@ -205,12 +207,10 @@ window.populateBindSelect = function(selectId) {
     });
     if (localGroup.children.length > 0) select.appendChild(localGroup);
 
-    // 2. SillyTavern 角色卡
-    const stContext = getContext();
-    if (stContext && stContext.characters && stContext.characters.length > 0) {
+    if (characters && characters.length > 0) {
         const stGroup = document.createElement('optgroup');
         stGroup.label = "--- SillyTavern 角色卡 ---";
-        stContext.characters.forEach((c, index) => {
+        characters.forEach((c, index) => {
             const opt = document.createElement('option');
             opt.value = "st_" + index; 
             opt.textContent = `[ST角色] ${c.name || '未知角色'}`;
@@ -246,12 +246,9 @@ window.getBindContextText = function(selectValue) {
     } 
     else if (selectValue.startsWith("st_")) {
         const index = parseInt(selectValue.replace("st_", ""));
-        const stContext = getContext();
-        if (stContext && stContext.characters) {
-            const char = stContext.characters[index];
-            if (char) {
-                return `【角色姓名】：${char.name || '未知'}\n【详细设定】：${char.description || '无'}\n【性格特征】：${char.personality || '无'}\n【剧情场景】：${char.scenario || '无'}`;
-            }
+        if (characters && characters[index]) {
+            const char = characters[index];
+            return `【角色姓名】：${char.name || '未知'}\n【详细设定】：${char.description || '无'}\n【性格特征】：${char.personality || '无'}\n【剧情场景】：${char.scenario || '无'}`;
         }
     }
     return null;
@@ -270,7 +267,6 @@ window.executeApiRequest = async function(promptText, titleText, saveCategory, s
     resultTextArea.innerHTML = '';
 
     try {
-        // 调用 SillyTavern 的核心 API 自动生成
         let fullText = await generateQuietPrompt(promptText, false);
         
         magicOverlay.style.display = 'none';
@@ -714,7 +710,6 @@ window.generateExpansion = function(type) {
 
     let charName = "角色";
     let bindIdForSave = null;
-    const stContextGlobal = getContext();
     
     if(select.value.startsWith("local_")) {
         const realId = select.value.replace("local_", "");
@@ -726,7 +721,7 @@ window.generateExpansion = function(type) {
         }
     } else if (select.value.startsWith("st_")) {
         const idx = parseInt(select.value.replace("st_", ""));
-        if(stContextGlobal && stContextGlobal.characters && stContextGlobal.characters[idx]) charName = stContextGlobal.characters[idx].name;
+        if(characters && characters[idx]) charName = characters[idx].name;
         bindIdForSave = select.value;
     }
 
@@ -1191,13 +1186,26 @@ jQuery(async () => {
             });
         }
 
-        // 添加 /magic 聊天指令，作为备用打开方式
-        if (registerSlashCommand) {
-            registerSlashCommand("magic", () => { window.openMagicGenerator(); }, [], "打开魔法设定生成器", true, true);
+        // ================= 防弹级动态导入 Slash Command =================
+        // 即便导入失败也不会卡死整个脚本，保证上面的顶部按钮正常出来
+        try {
+            const slashModule = await import('../../../slash-commands.js');
+            const slashClass = await import('../../../slash-commands/SlashCommand.js');
+            
+            if (slashModule && slashModule.SlashCommandParser && slashClass && slashClass.SlashCommand) {
+                slashModule.SlashCommandParser.addCommandObject(slashClass.SlashCommand.fromProps({
+                    name: 'magic',
+                    callback: () => { window.openMagicGenerator(); return ""; },
+                    helpString: '打开专属魔法设定生成器',
+                }));
+                console.log("[st-magic-maomaoyu] /magic 指令注册成功！");
+            }
+        } catch (err) {
+            console.warn("[st-magic-maomaoyu] 当前 ST 版本无法动态注册 /magic 指令，已跳过，请使用顶部图标唤醒:", err);
         }
-        
-        console.log(`[st-magic-maomaoyu] 插件初始化完成！可用 /magic 指令唤醒。`);
+
+        console.log(`[st-magic-maomaoyu] 插件初始化完成！`);
     } catch (err) {
-        console.error(`[st-magic-maomaoyu] 插件初始化失败:`, err);
+        console.error(`[st-magic-maomaoyu] 插件初始化发生致命错误:`, err);
     }
 });
