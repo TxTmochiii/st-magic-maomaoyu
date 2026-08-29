@@ -1,0 +1,31 @@
+<div class="magic-persona-container" style="padding: 10px;">
+    <h3 style="margin-top: 0; color: var(--SmartThemeBodyColor);">✨ 人设生成器</h3>
+    
+    <p style="font-size: 0.9em; color: var(--SmartThemeQuoteColor); line-height: 1.5; margin-bottom: 15px;">
+        专属魔法设定生成器。点击下方按钮打开全屏工坊。
+        <br><br>
+        在这里你可以生成全新人设、关联当前聊天角色（生成专属羁绊、亲友、宠物、衣帽间等），所有生成的设定将自动永久保存在自带的设定集中。
+    </p>
+
+    <div style="margin-top: 15px;">
+        <button id="btn_open_magic_workshop" class="menu_button interactable" style="width: 100%; font-size: 1.1em; font-weight: bold; padding: 12px; background: linear-gradient(135deg, #F8A4B8, #A0D2F0); color: #fff; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: transform 0.2s ease, box-shadow 0.2s ease;">
+            ✨ 开启魔法阵 (全屏模式)
+        </button>
+    </div>
+    
+    <p style="font-size: 0.8em; color: var(--SmartThemeQuoteColor); text-align: center; margin-top: 15px; opacity: 0.7;">
+        * 提示：你也可以在聊天栏输入 /magicpersona 或点击聊天框左侧的魔法棒 🪄 来快捷唤起本生成器。
+    </p>
+</div>
+
+<style>
+    #btn_open_magic_workshop:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(248,164,184,0.4);
+        opacity: 0.95;
+    }
+    #btn_open_magic_workshop:active {
+        transform: translateY(1px);
+        box-shadow: 0 2px 5px rgba(248,164,184,0.4);
+    }
+</style>
