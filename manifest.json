@@ -1,8 +1,9 @@
 {
-    "name": "人设生成器",
+    "name": "st-magic-maomaoyu",
+    "display_name": "人设生成器",
     "description": "专属魔法设定生成器。在扩展栏和魔法棒中可用，支持关联SillyTavern当前角色卡，生成专属羁绊、世界观、细节与私密档案，并自带设定集收藏夹。",
     "version": "1.0.0",
-    "author": " 猫猫雨",
+    "author": "猫猫雨",
     "main": "index.js",
     "dependencies": {}
 }
